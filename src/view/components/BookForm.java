@@ -4,6 +4,7 @@ import model.Author;
 import model.Book;
 import model.BookRepository;
 import model.Category;
+import persistence.DataAccessException;
 import view.components.customButtons.SubmitButton;
 import view.components.customDialogs.statusDialog.ErrorDialog;
 import view.components.customDialogs.statusDialog.SuccessDialog;
@@ -25,7 +26,7 @@ public class BookForm extends JPanel {
     private final CustomInputField titleField = new CustomInputField("Title", "String", true);
     private final CustomTextAreaField descriptionField = new CustomTextAreaField("Description");
     private final CategorySelector categoryField = new CategorySelector();
-    private final CustomInputField isbnField = new CustomInputField("ISBN (international standard book number)", "Integer", true);
+    private final CustomInputField isbnField = new CustomInputField("ISBN (International Standard Book Number)", "ISBN", true);
     private final SubmitButton submitButton = new SubmitButton("Submit");
 
     public BookForm(BookRepository repository) {
@@ -44,6 +45,7 @@ public class BookForm extends JPanel {
         submitButton.addActionListener(e -> submit());
     }
 
+    // Adiciona um componente ocupando toda a largura
     private void addRow(int row, JComponent component, int bottomGap) {
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
@@ -55,11 +57,7 @@ public class BookForm extends JPanel {
         add(component, gbc);
     }
 
-    @Override
-    public Dimension getMinimumSize() {
-        return getPreferredSize();
-    }
-
+    // Painel transparente com colunas de largura igual
     private JPanel columns(JComponent... components) {
         JPanel panel = new JPanel(new GridLayout(1, components.length, COLUMN_GAP, 0));
         panel.setOpaque(false);
@@ -72,6 +70,7 @@ public class BookForm extends JPanel {
     private boolean validateForm() {
         boolean valid = true;
 
+        // &= (e não &&) para sinalizar todos os campos inválidos de uma vez
         valid &= authorField.validateInput();
         valid &= publisherField.validateInput();
         valid &= titleField.validateInput();
@@ -84,32 +83,31 @@ public class BookForm extends JPanel {
 
     private void submit() {
         Window owner = SwingUtilities.getWindowAncestor(this);
-        String rules = "1 - Author, Publisher, and Title must not be empty or longer than 120 characters.\n" +
-                "2 - ISBN must begin with 978 or 979 and have 13 digits.";
 
         if (!validateForm()) {
-            ErrorDialog.display(owner, "Check if there is something wrong in your form\n" + rules);
+            ErrorDialog.display(owner, "Check if there is something wrong in your form");
             return;
         }
-
-        Author author = repository.resolveAuthor((String) authorField.getValue());
-        Category category = Category.fromActionCommand(categoryField.getValue());
 
         Book book = new Book(
                 (String) titleField.getValue(),
-                author,
+                new Author((String) authorField.getValue()),
                 (String) publisherField.getValue(),
-                category,
-                ((Long) isbnField.getValue()).longValue(),
+                Category.fromActionCommand(categoryField.getValue()),
+                Long.parseLong(String.valueOf(isbnField.getValue())),
                 descriptionField.getValue()
         );
 
-        if (!repository.add(book)) {
-            ErrorDialog.display(owner, "A book with ISBN " + book.getIsbn() + " already exists");
+        try {
+            if (!repository.add(book)) {
+                ErrorDialog.display(owner, "A book with ISBN " + book.getIsbn() + " already exists");
+                return;
+            }
+        } catch (DataAccessException e) {
+            ErrorDialog.display(owner, e.getMessage()); // mensagem genérica, sem detalhes do banco
             return;
         }
 
-        repository.printAll();
         clear();
         SuccessDialog.display(owner, "Your form was successfully submitted");
     }

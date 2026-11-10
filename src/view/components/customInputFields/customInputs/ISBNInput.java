@@ -35,20 +35,17 @@ public class ISBNInput extends CustomInput<Long> {
     @Override
     public boolean validateInput() {
         Long value = getValue();
+        int length = String.valueOf(value).length();
 
-        if(value == null) {
+        if(value == null || length < 4) {
             errorStyle();
             return false;
         }
 
-        boolean isInvalidLength = String.valueOf(value).length() != 13;
+        boolean isInvalidLength = length != 13;
 
         String prefix = String.valueOf(value).substring(0,3);
         boolean isInvalidPrefix = !prefix.equals("978") && !prefix.equals("979");
-
-        System.out.println(isInvalidLength);
-        System.out.println(prefix);
-        System.out.println(isInvalidPrefix);
 
         if (isInvalidLength || isInvalidPrefix) {
             errorStyle();

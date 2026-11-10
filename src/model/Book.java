@@ -8,16 +8,15 @@ public class Book {
     private final String publisher;
     private final Category category;
     private final Long isbn;
-    private final String description;
+    private final String description; // opcional: nunca é null, no máximo ""
+    private final boolean rented;
 
-    public Book(
-        String title,
-        Author author,
-        String publisher,
-        Category category,
-        Long isbn,
-        String description
-    ) {
+    public Book(String title, Author author, String publisher, Category category, Long isbn, String description) {
+        this(title, author, publisher, category, isbn, description, false);
+    }
+
+    public Book(String title, Author author, String publisher, Category category,
+                Long isbn, String description, boolean rented) {
 
         if (title == null || title.isBlank()) {
             throw new IllegalArgumentException("Title is required");
@@ -32,6 +31,7 @@ public class Book {
         this.category = Objects.requireNonNull(category, "Category is required");
         this.isbn = Objects.requireNonNull(isbn, "ISBN is required");
         this.description = description == null ? "" : description.trim();
+        this.rented = rented;
     }
 
     public String getTitle() { return title; }
@@ -40,6 +40,7 @@ public class Book {
     public Category getCategory() { return category; }
     public Long getIsbn() { return isbn; }
     public String getDescription() { return description; }
+    public boolean isRented() { return rented; }
 
     // O ISBN identifica o livro
     @Override

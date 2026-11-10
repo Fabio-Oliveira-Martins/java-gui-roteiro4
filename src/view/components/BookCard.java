@@ -2,7 +2,9 @@ package view.components;
 
 import model.Book;
 import model.BookRepository;
+import persistence.DataAccessException;
 import view.components.customDialogs.BookDetailsDialog;
+import view.components.customDialogs.statusDialog.ErrorDialog;
 import view.themes.Theme;
 import view.themes.ThemeManager;
 import view.themes.Themeable;
@@ -59,8 +61,14 @@ public class BookCard extends JButton implements Themeable {
         add(new BookCover(size.coverColor), BorderLayout.CENTER);
         add(text, BorderLayout.SOUTH);
 
-        addActionListener(e -> new BookDetailsDialog(
-                SwingUtilities.getWindowAncestor(this), book, repository, onChange).open());
+        addActionListener(e -> {
+            Window window = SwingUtilities.getWindowAncestor(this);
+            try {
+                new BookDetailsDialog(window, book, repository, onChange).open();
+            } catch (DataAccessException ex) {
+                ErrorDialog.display(window, ex.getMessage());
+            }
+        });
 
         applyTheme(ThemeManager.current());
     }

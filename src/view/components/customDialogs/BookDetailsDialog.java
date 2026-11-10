@@ -2,6 +2,7 @@ package view.components.customDialogs;
 
 import model.Book;
 import model.BookRepository;
+import persistence.DataAccessException;
 import view.components.BookCover;
 import view.components.CategoryStyle;
 import view.components.componentsUtils.CustomScrollBarUI;
@@ -10,6 +11,7 @@ import view.components.customButtons.IconButton;
 import view.components.customButtons.SecondaryButton;
 import view.components.customButtons.SubmitButton;
 import view.components.customDialogs.statusDialog.AlertDialog;
+import view.components.customDialogs.statusDialog.ErrorDialog;
 import view.components.customDialogs.statusDialog.SuccessDialog;
 import view.themes.Theme;
 import view.themes.ThemeManager;
@@ -313,11 +315,9 @@ public class BookDetailsDialog extends JDialog {
     }
 
     private JPanel actions() {
-        boolean rented = repository.isRented(book);
-
-        SubmitButton rent = new SubmitButton(rented ? "Return Book" : "Rent Book");
+        SubmitButton rent = new SubmitButton(book.isRented() ? "Return Book" : "Rent Book");
         rent.setPreferredSize(new Dimension(0, 40));
-        rent.addActionListener(e -> toggleRent(rented));
+        rent.addActionListener(e -> toggleRent());
 
         SecondaryButton delete = SecondaryButton.danger("Delete Book");
         delete.setPreferredSize(new Dimension(0, 40));
@@ -331,27 +331,43 @@ public class BookDetailsDialog extends JDialog {
         return panel;
     }
 
-    private void toggleRent(boolean wasRented) {
-        Window owner = getOwner();
-
-        if (wasRented) repository.unrent(book);
-        else repository.rent(book);
-
-        dispose();
-        onChange.run();
-        SuccessDialog.display(owner, wasRented ? "Book removed from your library" : "Book added to your library");
+    private void toggleRent() {
+        boolean wasRented = book.isRented();
+        boolean done;
+        try {
+            done = wasRented ? repository.unrent(book) : repository.rent(book);
+        } catch (DataAccessException e) {
+            ErrorDialog.display(this, e.getMessage());
+            return;
+        }
+        finish(done, wasRented ? "Book removed from your library" : "Book added to your library");
     }
 
     private void confirmDelete() {
         AlertDialog.confirm(this, "Delete Book",
                 "Are you sure that you want to delete \"" + book.getTitle() + "\"?",
                 () -> {
-                    Window owner = getOwner();
-                    repository.remove(book);
-                    dispose();
-                    onChange.run();
-                    SuccessDialog.display(owner, "Book deleted successfully");
+                    boolean removed;
+                    try {
+                        removed = repository.remove(book);
+                    } catch (DataAccessException e) {
+                        ErrorDialog.display(this, e.getMessage());
+                        return;
+                    }
+                    finish(removed, "Book deleted successfully");
                 });
+    }
+
+    // Sucesso (1 linha afetada) ou ausência (0 linhas): fecha, atualiza a página e informa
+    private void finish(boolean done, String successMessage) {
+        Window owner = getOwner();
+        dispose();
+        onChange.run();
+        if (done) {
+            SuccessDialog.display(owner, successMessage);
+        } else {
+            ErrorDialog.display(owner, "This book no longer exists");
+        }
     }
 
     private JButton closeButton() {

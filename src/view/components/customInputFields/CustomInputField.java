@@ -28,7 +28,7 @@ public class CustomInputField extends JPanel {
 
         switch (type.toLowerCase()) {
             case "string": input = new StringInput(); break;
-            case "integer": input = new ISBNInput(); break;
+            case "isbn": input = new ISBNInput(); break;
             default: throw new IllegalArgumentException("Invalid input type: " + type);
         }
 

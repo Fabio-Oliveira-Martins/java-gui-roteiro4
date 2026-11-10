@@ -1,5 +1,7 @@
 package view.pages;
 
+import persistence.DataAccessException;
+import view.components.MutedLabel;
 import view.components.sections.Section;
 
 import javax.swing.*;
@@ -17,6 +19,15 @@ public abstract class Page extends JPanel implements Scrollable {
 
     // Template method: o roteiro é igual para todas as páginas
     public final void render() {
+        List<Section> sections;
+        try {
+            sections = createSections();
+        } catch (DataAccessException e) {
+            Section error = new Section("Something went wrong");
+            error.setContent(new MutedLabel(e.getMessage()));
+            sections = List.of(error);
+        }
+
         removeAll();
 
         GridBagConstraints gbc = new GridBagConstraints();
@@ -27,7 +38,7 @@ public abstract class Page extends JPanel implements Scrollable {
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.insets = new Insets(0, 0, GAP, 0);
 
-        for (Section section : createSections()) {
+        for (Section section : sections) {
             add(section, gbc);
         }
 
